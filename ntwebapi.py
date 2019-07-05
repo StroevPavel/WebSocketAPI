@@ -6,10 +6,14 @@ import json
 import time
 import datetime
 
+import positions
+
+
 def getUnixDT():
 	dt = datetime.datetime.utcnow()
 	dts = str(time.mktime(dt.timetuple()) * 1000)
 	return dts[:dts.find('.')]
+
 
 def collectMsgParams(key):
 	msgParams = {
@@ -22,6 +26,7 @@ def collectMsgParams(key):
 		}
 	}
 	return msgParams[key]
+
 
 def ntconnect(serv):
 	if serv == 'uat':
@@ -40,14 +45,19 @@ def ntconnect(serv):
 async def sendPing():
 	while True:
 		await asyncio.sleep(3)
-		json_msg = {
+		makePingMsg()
+
+
+def makePingMsg():
+	json_msg = {
 			'Type': 1,
 			'Msg': getUnixDT()
 		}
-		msg_tosend = json.dumps(json_msg)
-		print(">>! " + msg_tosend)
-		global ws
-		ws.send(msg_tosend)
+	msg_tosend = json.dumps(json_msg)
+	print(">>! " + msg_tosend)
+	global ws
+	ws.send(msg_tosend)	
+
 
 def login(clName, clPass):
 	msgParams = {
@@ -58,8 +68,10 @@ def login(clName, clPass):
 	sendMsg('LoginRequest', msgParams)
 	sendMsg('SelectUserRoleRequest', '')
 
+
 def logout():
 	pass
+
 
 def sendMsg(type, msg):
 	if type == 'Hello' or  type == 'SelectUserRoleRequest':
@@ -93,6 +105,7 @@ def sendMsg(type, msg):
 	msg_tosend = json.dumps(json_msg)
 	sendToSocket(msg_tosend)
 
+
 def sendToSocket(msg):
 	global RequestId
 	RequestId += 1
@@ -100,9 +113,25 @@ def sendToSocket(msg):
 	global ws
 	ws.send(msg)
 
-async def receiveFromSocket(): 
+
+async def receiveFromSocket(SubsAccPositions, SubsAcc): 
 	while True:
 		global ws
 		msg = ws.recv()
-		print("<<! " + msg)
+		# print("<<! " + msg)
+		hdDict = json.loads(msg)
+
+		if (hdDict['Type'] == 1):
+			print('<<! Get ping request: ' + msg)
+			makePingMsg()
+
+		elif (hdDict['Type'] == 2):
+			print('<<= Get ping responce: ' + msg)
+
+		elif (hdDict['Type'] == 3):
+			positions.dataParser(json.loads(hdDict['Msg']),SubsAccPositions,SubsAcc)
+
+		else:
+			print("<<= " + msg)
+
 		await asyncio.sleep(0.1)
