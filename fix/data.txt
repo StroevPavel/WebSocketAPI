@@ -1,0 +1,56 @@
+Для аккаунта StroevMAIN (ID=53): 
+
+Market Session: 
+DNS/IP: uat-gate.ntprog.com (87.245.204.203)
+Direct Port: 20011
+SSL Port: 21011
+SenderCompID: CODE00_00_MD
+TargetCompID: NTPROUAT  
+  
+Order Session: 
+DNS/IP: uat-gate.ntprog.com (87.245.204.203)
+Direct Port: 20012
+SSL Port: 21012
+SenderCompID: CODE00_00_OM
+TargetCompID: NTPROUAT  
+
+
+
+STUNNEL
+
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+debug = 5
+
+[NTprog - UAT - Client FIX Market]
+CAfile = C:\NTPro\cert\ntprog-ca-1.pem
+cert = C:\NTPro\cert\uat-client-1.cert.pem
+key = C:\NTPro\cert\uat-client-1.key.pem
+verify = 2
+client = yes
+accept = 127.0.0.1:21011
+connect = uat-gate.ntprog.com:21011
+checkHost = uat-gate.ntprog.com
+verifyChain = yes
+
+[NTprog - UAT - Client FIX Order]
+CAfile = C:\NTPro\cert\ntprog-ca-1.pem
+cert = C:\NTPro\cert\uat-client-1.cert.pem
+key = C:\NTPro\cert\uat-client-1.key.pem
+verify = 2
+client = yes
+accept = 127.0.0.1:21012
+connect = uat-gate.ntprog.com:21012
+checkHost = uat-gate.ntprog.com
+verifyChain = yes
+
+[NTprog - UAT - Client FIX STP]
+CAfile = C:\NTPro\cert\ntprog-ca-1.pem
+cert = C:\NTPro\cert\uat-client-1.cert.pem
+key = C:\NTPro\cert\uat-client-1.key.pem
+verify = 2
+client = yes
+accept = 127.0.0.1:21013
+connect = uat-gate.ntprog.com:21013
+checkHost = uat-gate.ntprog.com
+verifyChain = yes
