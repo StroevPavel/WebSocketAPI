@@ -1,12 +1,12 @@
 
 # coding: utf-8
 
-# In[59]:
+# In[49]:
 
 
 import MySQLdb
 import datetime as datetime
-import datetime
+import numpy as np
 
 def roundTime(dt=None, roundTo=60):
    """Round a datetime object to any time lapse in seconds
@@ -34,7 +34,7 @@ def db_set_connect(sql_ip, sql_login, sql_pass, sql_db):
 		print("Connection error: {}".format(err))
 		conn.close()
         
-def select_data(sql_conn, sql):
+def run_query(sql_conn, sql):
     cursor = sql_conn.cursor()
     cursor.execute(sql)
     market_data = cursor.fetchall()
@@ -45,64 +45,86 @@ def volatility_calc(market_data):
     for i in range(len(market_data)):
         #7 for mid-market
         usd_rub_mid.append(round(market_data[i][7], 5))
-
-    usd_rub_diff = []
-    for i in range(len(usd_rub_mid) - 1):
-        diff = usd_rub_mid[i+1] - usd_rub_mid[i]
-        usd_rub_diff.append(round(diff,6))
-
-    usd_rub_std_dev = np.std(usd_rub_diff)
-    return usd_rub_std_dev
+    #usd_rub_diff = []
+    #for i in range(len(usd_rub_mid) - 1):
+    #    diff = (usd_rub_mid[i+1] - usd_rub_mid[i])
+    #    usd_rub_diff.append(diff)
+    usd_rub_std_dev = np.std(usd_rub_mid)
+    return [round(usd_rub_std_dev, 6), round(market_data[-1][7], 6)]
 
 def fetching_data(date_time, window):
-    sql_conn = db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
     now = date_time
     now = roundTime(now, roundTo=1)
     now_minus_delta = now - datetime.timedelta(seconds=window)
     now_minus_delta = roundTime(now_minus_delta,roundTo=1)
     sql = "select * from quotes where date_time between '" + str(now_minus_delta) +"'" + " and '" + str(now) + "' order by date_time asc"
-    market_data = select_data(sql_conn, sql)
+    market_data = run_query(sql_conn, sql)
     return market_data
 
+def inserting_data(sql_conn, short_window, long_window, mid, vol_short, vol_long, date_time):
+    sql = "insert into volcount (windshort, windlong, mid, volshort, vollong, date_time) values ('" + str(short_window) + "', '" + str(long_window) + "', '" + str(mid) + "', '" + str(vol_short) + "', '" + str(vol_long) + "', '" + str(date_time) +"')"
+    run_query(sql_conn, sql)
+    print("Volatility data saved in database")
+    sql_conn.commit()
+    return 0
+    
 if __name__ == "__main__":
-    short_window = 20
-    long_window = 600
-    now = datetime.datetime(2019, 7, 25, 13, 53, 10)
     
-    market_data = fetching_data(now, short_window)
-    usd_rub_vol_short = volatility_calc(market_data)
+    sql_conn = db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
     
-    market_data = fetching_data(now, long_window)
-    usd_rub_vol_long = volatility_calc(market_data)
+    short_window = 30
+    long_window = 300
+    start_time = datetime.datetime(2019, 7, 25, 14, 15, 0)
+    end_time = datetime.datetime(2019, 7, 25, 14, 25, 0)
+    time_delta = end_time - start_time
+    time_delta = time_delta.total_seconds()
+    time_range = []
+    #frequency of volatlity calculation
+    frequency_coefficient = 1
+    for i in range(int(time_delta)):
+        time_var = start_time + datetime.timedelta(seconds =i*frequency_coefficient)
+        time_range.append(time_var)
     
-    print(usd_rub_vol_short)
-    print(usd_rub_vol_long)
+    vol_calculated = []
+    for time in time_range:
+        now = time
+        market_data = fetching_data(now, short_window)
+        [usd_rub_vol_short, usd_rub_mid] = volatility_calc(market_data)
+        
+        market_data = fetching_data(now, long_window)
+        [usd_rub_vol_long, usd_rub_mid] = volatility_calc(market_data)
+        
+        inserting_data(sql_conn, short_window, long_window, usd_rub_mid, usd_rub_vol_short, usd_rub_vol_long, now)
+        
+        vol_calculated.append((now, usd_rub_vol_short, usd_rub_vol_long))
+        
+    print(vol_calculated)
     
     
 
 
 
 
-# In[56]:
+# In[41]:
 
 
-len(market_data)
+market_data[-1]
 
 
-# In[24]:
+# In[46]:
 
 
-market_data[0]
+market_data[-3]
 
 
-# In[25]:
+# In[43]:
 
 
 print(now)
 print(now_minus_delta)
 
 
-# In[58]:
+# In[ ]:
 
 
 import numpy as np
@@ -127,7 +149,7 @@ print(usd_rub_std_dev)
                 
 
 
-# In[55]:
+# In[ ]:
 
 
 len(usd_rub_mid)
