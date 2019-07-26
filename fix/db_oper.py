@@ -8,7 +8,7 @@ import MySQLdb
 def db_set_connect(sql_ip, sql_login, sql_pass, sql_db):
 	try:
 		conn = MySQLdb.connect(host=sql_ip, user=sql_login, passwd=sql_pass, db=sql_db, use_unicode=True, charset="utf8")
-		# print("Переподключение к BD MySQL - ОК") # отладочное, удалить
+		print("Переподключение к BD MySQL - ОК") # отладочное, удалить
 		return conn
 	except MySQLdb.Error as err:
 		err_handle(1, err)
