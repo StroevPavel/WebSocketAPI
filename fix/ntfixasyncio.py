@@ -28,9 +28,11 @@ sql_settings = {
 
 
 def save_quote_to_db(quote):
-	sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
+	global sql_conn
 	if not db.save_quote(sql_conn, quote):
-		print ("DB add data error!")
+		sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
+		if not db.save_quote(sql_conn, quote):
+			print ("DB add data error!")
 
 
 
@@ -163,16 +165,21 @@ async def receiveFromSocket(connID):
 
 
 async def clearOldQuotes(): 
+	global sql_conn
 	while True:
-		sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
+		#sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
 		if not db.clear_old_quotes(sql_conn):
-			print ("DB add data error!")
+			sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
+			if not db.clear_old_quotes(sql_conn):
+				print ("DB clear data error!")
 		await asyncio.sleep(3600)
 
 
 
 async def startApp(): 
 	mdSession = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	global sql_conn
+	sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
 	global SeqNum
 	SeqNum = 1
 	with mdSession:
@@ -182,7 +189,7 @@ async def startApp():
 			await receiveFromSocket(mdSession)
 		except socket.error as err:
 			print(err)
-			print("Error")
+			print("Error! Need to reconnect MD session")
 
 
 
