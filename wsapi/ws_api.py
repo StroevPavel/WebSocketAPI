@@ -7,7 +7,7 @@ from enum import Enum
 
 import websockets
 
-from ..constants import PUBLIC_WS_API_MAJOR_VERSION, PUBLIC_WS_API_MINOR_VERSION, NTPRO_USER, NTPRO_PASSWORD, NTPRO_WS_URL
+from wsapi.constants import PUBLIC_WS_API_MAJOR_VERSION, PUBLIC_WS_API_MINOR_VERSION, NTPRO_USER, NTPRO_PASSWORD, NTPRO_WS_URL
 
 
 class NTProMessageType(int, Enum):
