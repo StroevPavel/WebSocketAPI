@@ -5,6 +5,25 @@ import json
 import time
 import datetime
 import asyncio
+import db_oper as db
+
+
+
+
+sql_settings = {
+	"sql_ip":"46.228.199.76",
+	"sql_login":"volmdapp",
+	"sql_pass":"Fx1234#",
+	"sql_db":"volatility"
+}
+
+
+
+def save_acc_to_db(acc_data):
+	global sql_conn
+	if not db.save_acc(sql_conn, acc_data):
+		sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
+		save_acc(sql_conn, acc_data)
 
 
 
@@ -31,7 +50,7 @@ def collectMsgParams(key):
 	msgParams = {
 	'Hello': {
 		'VersionMajor': 2,
-		'VersionMinor': 3
+		'VersionMinor': 4
 		},
 	'SelectUserRoleRequest': {
 		'SelectedRole': 2
@@ -65,6 +84,13 @@ def makeDataMsg(type, msg):
 				'AccountId': msg
 				}
 			})
+	elif type == 'RequestAccountStates':
+		data_json = json.dumps({
+			'RequestId': RequestId,
+			'OriginalRequestId': RequestId,
+			'RequestType': type,
+			'Message': ''
+			})
 
 	json_msg = {
 		'Type': 3,
@@ -82,7 +108,10 @@ def WSconnect():
 		global ws_conn
 		ws_conn = create_connection('wss://public-api-uat.ntprog.com:443')
 		makeDataMsg('Hello','')
-		login('StroevAdmin@ALFN3', 'Fx1234')
+		#login('StroevAdmin@ALFN3', 'Fx1234')
+
+		#makeDataMsg('RequestAccountStates','')
+
 	except ws.Error as err:
 		print(err)
 		WSclose()
@@ -90,7 +119,24 @@ def WSconnect():
 
 
 def parseMsg(msg):
-	print(msg)
+	#print('<<<<!!!' + msg['RequestType'])
+	assList = []
+	if (msg['RequestType'] == 'Environment'):
+		login('StroevAdmin@ALFN3', 'Fx1234')
+
+	elif (msg['RequestType'] == 'LoginReply'):
+		makeDataMsg('RequestAccountStates','')
+
+	elif (msg['RequestType'] == 'AccountStatesUpdate'):
+		AccStates = msg['Message']['AccountStates']
+		i = 0
+		global sql_conn
+		db.clear_acc(sql_conn)
+		while i < len(AccStates):
+			save_acc_to_db(AccStates[i]['key'])
+			i += 1
+	else:
+		print(msg)
 
 
 
@@ -127,7 +173,7 @@ def WSsend(msg, msg_type):
 		print(">>..Send data message..>> " + msg)
 	else:
 		print(">>..Send unknown message type..>> " + msg)
-	#print('>>>> ' + msg)
+	print('>>>> ' + msg)
 	global ws_conn
 	ws_conn.send(msg)
 
@@ -150,6 +196,16 @@ def login(clName, clPass):
 
 
 
+"""
+def UpdateAccountStates(AccList):
+	n = 0
+	while n < len(AccList):
+		#print(type(AccList[n]))
+		global sql_conn
+		save_acc_to_db(sql_conn, AccList[n])
+		i += 1
+"""
+
 
 async def sendPing():
 	while True:
@@ -159,6 +215,8 @@ async def sendPing():
 
 
 async def startApp(): 
+	global sql_conn
+	sql_conn = db.db_set_connect(sql_settings["sql_ip"], sql_settings["sql_login"], sql_settings["sql_pass"], sql_settings["sql_db"])
 	WSconnect()
 
 
